@@ -31,29 +31,33 @@ app.get("/api/pricing", async function (req, res) {
     })
     .then((resp) =>
       resp.data.asset_events
-        .filter((e) => e.payment_token.symbol === "ETH")
+        .filter((e) => ["ETH", "WETH"].includes(e.payment_token.symbol))
         .map((e) => e.total_price)
     );
 
-  const [mean, std] = [math.mean(prices), math.std(prices)];
-  const [min, max] = [Math.min(...prices), Math.max(...prices)];
-  console.log({
-    mean,
-    std,
-    min,
-    max,
-    currency: "ETH",
-    sample_size: prices.length,
-  });
-
-  const data = {
-    mean,
-    std,
-    min,
-    max,
-    currency: "ETH",
-    sample_size: prices.length,
-  };
+  let data;
+  if (prices.length > 0) {
+    const [mean, std] = [math.mean(prices), math.std(prices)];
+    const [min, max] = [Math.min(...prices), Math.max(...prices)];
+    console.log({
+      mean,
+      std,
+      min,
+      max,
+      currency: "ETH",
+      sample_size: prices.length,
+    });
+    data = {
+      mean,
+      std,
+      min,
+      max,
+      currency: "ETH",
+      sample_size: prices.length,
+    };
+  } else {
+    data = { error: "no data" };
+  }
 
   res.send(data);
 });
