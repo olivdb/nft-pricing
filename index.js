@@ -37,18 +37,15 @@ app.get("/api/pricing", async function (req, res) {
 
   let data;
   if (prices.length > 0) {
-    const [mean, std] = [math.mean(prices), math.std(prices)];
+    const [mean, median, std] = [
+      math.mean(prices),
+      math.median(prices),
+      math.std(prices),
+    ];
     const [min, max] = [Math.min(...prices), Math.max(...prices)];
-    console.log({
-      mean,
-      std,
-      min,
-      max,
-      currency: "ETH",
-      sample_size: prices.length,
-    });
     data = {
       mean,
+      median,
       std,
       min,
       max,
