@@ -1,55 +1,63 @@
-const express = require('express')
-const path = require('path')
-const moment = require('moment')
-const { HOST } = require('./src/constants')
-const db = require('./src/database')
+const express = require("express");
+const path = require("path");
+const axios = require("axios").default;
+const math = require("mathjs");
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5000;
 
 const app = express()
-  .set('port', PORT)
-  .set('views', path.join(__dirname, 'views'))
-  .set('view engine', 'ejs')
+  .set("port", PORT)
+  .set("views", path.join(__dirname, "views"))
+  .set("view engine", "ejs");
 
-// Static public files
-app.use(express.static(path.join(__dirname, 'public')))
+app.get("/api/pricing", async function (req, res) {
+  const { contract, startTime } = req.query;
 
-app.get('/', function(req, res) {
-  res.send('Get ready for OpenSea!');
-})
+  const opensea = axios.create({
+    baseURL: "https://api.opensea.io/api/v1",
+    timeout: 10000,
+  });
 
-app.get('/api/token/:token_id', function(req, res) {
-  const tokenId = parseInt(req.params.token_id).toString()
-  const person = db[tokenId]
-  const bdayParts = person.birthday.split(' ')
-  const day = parseInt(bdayParts[1])
-  const month = parseInt(bdayParts[0])
+  const prices = await opensea
+    .get("/events", {
+      params: {
+        only_opensea: false,
+        offset: 0,
+        limit: 300,
+        asset_contract_address: contract,
+        event_type: "successful",
+        occurred_after: startTime || 0,
+      },
+    })
+    .then((resp) =>
+      resp.data.asset_events
+        .filter((e) => e.payment_token.symbol === "ETH")
+        .map((e) => e.total_price)
+    );
+
+  const [mean, std] = [math.mean(prices), math.std(prices)];
+  const [min, max] = [Math.min(...prices), Math.max(...prices)];
+  console.log({
+    mean,
+    std,
+    min,
+    max,
+    currency: "ETH",
+    sample_size: prices.length,
+  });
+
   const data = {
-    'name': person.name,
-    'attributes': {
-      'birthday': person.birthday,
-      'birth month': monthName(month),
-      'zodiac sign': zodiac(day, month),
-      // 'age': moment().diff(person.birthday, 'years')
-    },
-    'image': `${HOST}/images/${tokenId}.png`
-  }
-  res.send(data)
-})
+    mean,
+    std,
+    min,
+    max,
+    currency: "ETH",
+    sample_size: prices.length,
+  };
 
-app.listen(app.get('port'), function() {
-  console.log('Node app is running on port', app.get('port'));
-})
+  res.send(data);
+});
 
-// returns the zodiac sign according to day and month ( https://coursesweb.net/javascript/zodiac-signs_cs )
-function zodiac(day, month) {
-  var zodiac =['', 'Capricorn', 'Aquarius', 'Pisces', 'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn'];
-  var last_day =['', 19, 18, 20, 20, 21, 21, 22, 22, 21, 22, 21, 20, 19];
-  return (day > last_day[month]) ? zodiac[month*1 + 1] : zodiac[month];
-}
-
-function monthName(month) {
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
-  ]
-  return monthNames[month - 1]
-}
+app.listen(app.get("port"), function () {
+  console.log("Node app is running on port", app.get("port"));
+});

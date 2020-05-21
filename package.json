@@ -1,17 +1,19 @@
 {
-  "name": "metadata-api-nodejs",
+  "name": "nft-pricer",
   "version": "1.0.0",
-  "description": "Sample metadata API for crypto collectibles",
+  "description": "Price aggregator for crypto collectibles",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "node test.js"
   },
-  "author": "Alex Atallah <alex.atallah@opensea.io>",
+  "author": "Olivier VDB <olivier@argent.xyz>",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.19.2",
     "ejs": "^2.6.1",
     "express": "^4.16.4",
+    "mathjs": "^7.0.0",
     "moment": "^2.22.2"
   },
   "devDependencies": {
